@@ -8,9 +8,9 @@ const port = process.env.PORT || 3000;
 
 const PATH_TO_ASSETS = "./src/assets/";
 
-if (!fs.existsSync(PATH_TO_ASSETS)) {
-  fs.mkdirSync(PATH_TO_ASSETS);
-}
+// if (!fs.existsSync(PATH_TO_ASSETS)) {
+//   fs.mkdirSync(PATH_TO_ASSETS);
+// }
 
 // app.get("/proxy", async (req, res) => {
 //   let url = req.query.url; //url to download
