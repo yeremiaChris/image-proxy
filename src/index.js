@@ -44,26 +44,75 @@ const PATH_TO_ASSETS = "./src/assets/";
 //   }
 // });
 
+const crypto = require("crypto");
+const sharp = require("sharp");
+const { fileTypeFromBuffer } = await import("file-type");
+
+const cache = new Map();
+const TTL = 3600 * 1000; // 1 hour server-side cache
+
 app.get("/proxy", async (req, res) => {
-  // asdfasdf
-  let url = req.query.url;
-  if (!url) {
-    return res.status(400).send("Missing URL parameter oke");
+  const url = req.query.url;
+  if (!url) return res.status(400).send("Missing URL parameter");
+
+  // Validate URL
+  try {
+    const parsedUrl = new URL(url);
+    const allowedDomains = ["coinimages.com", "memecoincdn.com"];
+    if (!allowedDomains.includes(parsedUrl.hostname)) {
+      return res.status(403).send("Invalid URL");
+    }
+  } catch {
+    return res.status(400).send("Malformed URL");
   }
 
-  let buffer = await download(url);
-  if (buffer) {
-    // Generate hash for ETag (optional, for caching)
-    let hash = crypto.createHash("md5").update(url).digest("hex");
+  // Check server-side cache
+  if (cache.has(url)) {
+    const { buffer, timestamp } = cache.get(url);
+    if (Date.now() - timestamp < TTL) {
+      const hash = crypto.createHash("md5").update(buffer).digest("hex");
+      if (req.get("If-None-Match") === `"${hash}"`) {
+        return res.status(304).end();
+      }
+      const type = await fileTypeFromBuffer(buffer);
+      res.set({
+        "Content-Type": type?.mime || "image/webp",
+        "Cache-Control": "public, max-age=86400, must-revalidate",
+        ETag: `"${hash}"`,
+        "X-Cache": "HIT",
+      });
+      return res.send(buffer);
+    }
+  }
+
+  // Download and optimize
+  try {
+    let buffer = await download(url);
+    if (!buffer) return res.status(404).send("Image not found");
+
+    // Optimize image
+    buffer = await sharp(buffer)
+      .resize({ width: 128 })
+      .webp({ quality: 80 })
+      .toBuffer();
+
+    // Cache server-side
+    cache.set(url, { buffer, timestamp: Date.now() });
+
+    // Set headers
+    const hash = crypto.createHash("md5").update(buffer).digest("hex");
+    if (req.get("If-None-Match") === `"${hash}"`) {
+      return res.status(304).end();
+    }
     res.set({
-      "Content-Type": "image/jpeg",
-      "Cache-Control": "public, max-age=31536000", // Cache for 1 year
-      ETag: `"${hash}"`, // Helps with conditional requests
-      "X-Cache": "MISS", // Mimic your original Cache header
+      "Content-Type": "image/webp",
+      "Cache-Control": "public, max-age=86400, must-revalidate",
+      ETag: `"${hash}"`,
+      "X-Cache": "MISS",
     });
     res.send(buffer);
-  } else {
-    res.status(500).send("Error downloading image");
+  } catch (err) {
+    res.status(500).send(`Error downloading image: ${err.message}`);
   }
 });
 
