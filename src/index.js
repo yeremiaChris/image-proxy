@@ -45,9 +45,10 @@ const PATH_TO_ASSETS = "./src/assets/";
 // });
 
 app.get("/proxy", async (req, res) => {
+  // asdfasdf
   let url = req.query.url;
   if (!url) {
-    return res.status(400).send("Missing URL parameter");
+    return res.status(400).send("Missing URL parameter oke");
   }
 
   let buffer = await download(url);
