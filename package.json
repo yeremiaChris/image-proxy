@@ -2,7 +2,7 @@
   "name": "Reverse Image Proxy",
   "version": "1.0.0",
   "description": "Proxy images that are usually blocked by web CDNs",
-  "main": "index.js",
+  "main": "src/index.js",
   "type": "module",
   "scripts": {
     "start": "node ./src/index.js"
@@ -24,5 +24,8 @@
     "node-fetch": "^2.6.1",
     "request": "^2.88.2",
     "unirest": "^0.6.0"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }
