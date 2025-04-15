@@ -7,7 +7,7 @@ import download from "./helpers/download.js";
 const app = express();
 const port = process.env.PORT || 3000;
 const cache = new Map();
-const CACHE_TTL = 3600 * 1000; // 1 hour in milliseconds
+const CACHE_TTL = 1; // 1 hour in milliseconds
 
 // Middleware
 app.use(cors({ origin: "*", methods: ["GET"] }));
